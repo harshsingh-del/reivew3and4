@@ -1,0 +1,71 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import dao.UserDAO;
+import model.User;
+import java.util.List;
+import java.util.Arrays;
+
+class UserDAOTest {
+
+    private UserDAO userDAO;
+
+    @BeforeEach
+    void setUp() {
+        // Initialize the mock UserDAO before each test
+        userDAO = mock(UserDAO.class);
+    }
+
+    @Test
+    void selectUser_testcase1() {
+        // Mocking the UserDAO selectUser() method
+        User mockUser = new User(1, "John Doe", "john.doe@example.com", "password123", "USA");
+        when(userDAO.selectUser(1)).thenReturn(mockUser);
+
+        User user = userDAO.selectUser(1);
+        assertNotNull(user, "User should not be null");
+        assertEquals(1, user.getId(), "User ID should be 1");
+        assertEquals("John Doe", user.getName(), "User name should be John Doe");
+    }
+
+    @Test
+    void selectAllUsers_testcase2() {
+        // Mocking the UserDAO selectAllUsers() method
+        List<User> mockUsers = Arrays.asList(
+            new User(1, "John Doe", "john.doe@example.com", "password123", "USA"),
+            new User(2, "Jane Doe", "jane.doe@example.com", "password456", "Canada")
+        );
+        when(userDAO.selectAllUsers()).thenReturn(mockUsers);
+
+        List<User> users = userDAO.selectAllUsers();
+        assertNotNull(users, "User list should not be null");
+        assertTrue(users.size() > 0, "User list should have more than 0 users");
+    }
+
+    @Test
+    void deleteUser_testcase3() {
+        // Mocking the UserDAO deleteUser() method
+        when(userDAO.deleteUser(2)).thenReturn(true);
+
+        Boolean status = userDAO.deleteUser(2);
+        assertTrue(status, "User should be deleted successfully");
+
+        // Verify that the delete method was called with ID 2
+        verify(userDAO, times(1)).deleteUser(2);
+    }
+
+    @Test
+    void insertUser_testcase4() {
+        // Mocking the UserDAO insertUser() method
+        User newUser = new User(3, "Jake Doe", "jake.doe@example.com", "password789", "UK");
+        when(userDAO.insertUser(newUser)).thenReturn(true);
+
+        Boolean status = userDAO.insertUser(newUser);
+        assertTrue(status, "User should be inserted successfully");
+
+        // Verify that insertUser method was called with the correct user object
+        verify(userDAO, times(1)).insertUser(newUser);
+    }
+}
