@@ -1,0 +1,115 @@
+package controller;
+
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.*;
+import java.sql.*;
+import java.util.List;
+
+@WebServlet("/")
+public class UserServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    private UserDAO dao;
+    private ProgramDAO programDao;
+
+    public UserServlet() {
+        super();
+    }
+
+    public void init() {
+        dao = new UserDAO();
+        programDao = new ProgramDAO();  // Initialize the DAO for handling training programs
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getServletPath();
+        switch(action) {
+            case "/new":
+                showNewForm(request, response);
+                break;
+            case "/insert":
+                insertUser(request, response);
+                break;
+            case "/list":
+                listUser(request, response);
+                break;
+            case "/login":
+                login(request, response);
+                break;
+            case "/loginprocess":
+                try {
+                    loginprocess(request, response);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "/logout":
+                logout(request, response);
+                break;
+            case "/programs":
+                showPrograms(request, response);  // Display available fitness programs
+                break;
+            case "/enrollProgram":
+                enrollInProgram(request, response);  // Enroll a user in a fitness program
+                break;
+            case "/progress":
+                showProgress(request, response);  // Show user progress in the program
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Other existing methods ...
+
+    // New feature: Display available fitness programs
+    public void showPrograms(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<Program> programs = programDao.selectAllPrograms();
+        request.setAttribute("programs", programs);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("program-list.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    // New feature: Enroll a user in a fitness program
+    public void enrollInProgram(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        String email = (String) session.getAttribute("email");
+        int programId = Integer.parseInt(request.getParameter("programId"));
+        
+        User user = dao.selectUserByEmail(email);
+        
+        Program program = programDao.selectProgramById(programId);
+        
+        if (user != null && program != null) {
+            programDao.enrollUserInProgram(user.getId(), programId);
+            response.sendRedirect("programs");  // Redirect to the program list after enrollment
+        } else {
+            request.setAttribute("errorMessage", "Invalid user or program");
+            RequestDispatcher dispatcher = request.getRequestDispatcher("program-list.jsp");
+            dispatcher.forward(request, response);
+        }
+    }
+
+   
+    public void showProgress(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        String email = (String) session.getAttribute("email");
+        
+        User user = dao.selectUserByEmail(email);
+        
+        if (user != null) {
+            List<ProgramProgress> progressList = programDao.getUserProgress(user.getId());
+            request.setAttribute("progressList", progressList);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("user-progress.jsp");
+            dispatcher.forward(request, response);
+        }
+    }
+
+   
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
+}
