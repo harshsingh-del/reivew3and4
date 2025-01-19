@@ -1,0 +1,90 @@
+package model;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ProgramDAO {
+    private static final String SELECT_ALL_PROGRAMS = "SELECT * FROM programs";
+    private static final String SELECT_PROGRAM_BY_ID = "SELECT * FROM programs WHERE id = ?";
+    private static final String ENROLL_USER_IN_PROGRAM = "INSERT INTO user_programs (user_id, program_id, start_date) VALUES (?, ?, NOW())";
+    private static final String SELECT_USER_PROGRESS = "SELECT p.name, up.start_date, up.progress FROM user_programs up JOIN programs p ON up.program_id = p.id WHERE up.user_id = ?";
+
+    public List<Program> selectAllPrograms() {
+        List<Program> programs = new ArrayList<>();
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_PROGRAMS)) {
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                Program program = new Program(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getString("difficulty_level"),
+                        rs.getInt("duration")
+                );
+                programs.add(program);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return programs;
+    }
+
+    public Program selectProgramById(int id) {
+        Program program = null;
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SELECT_PROGRAM_BY_ID)) {
+            preparedStatement.setInt(1, id);
+            ResultSet rs = preparedStatement.executeQuery();
+            if (rs.next()) {
+                program = new Program(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getString("difficulty_level"),
+                        rs.getInt("duration")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return program;
+    }
+
+    public void enrollUserInProgram(int userId, int programId) {
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(ENROLL_USER_IN_PROGRAM)) {
+            preparedStatement.setInt(1, userId);
+            preparedStatement.setInt(2, programId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<ProgramProgress> getUserProgress(int userId) {
+        List<ProgramProgress> progressList = new ArrayList<>();
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SELECT_USER_PROGRESS)) {
+            preparedStatement.setInt(1, userId);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                ProgramProgress progress = new ProgramProgress(
+                        rs.getString("name"),
+                        rs.getDate("start_date"),
+                        rs.getString("progress")
+                );
+                progressList.add(progress);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return progressList;
+    }
+
+    private Connection getConnection() throws SQLException {
+        // Assuming you have a method to get the connection to the database
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/fitness_platform", "root", "password");
+    }
+}
